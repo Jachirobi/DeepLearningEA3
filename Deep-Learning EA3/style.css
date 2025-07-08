@@ -1,0 +1,319 @@
+/* style.css */
+:root {
+	--primary-color: #34495e;
+	--secondary-color: #2c3e50;
+	--text-color: #ffffff;
+	--border-radius: 8px;
+	--gap: 1rem;
+}
+
+body {
+	font-family: Arial, sans-serif;
+	background: #ecf0f1;
+	color: var(--secondary-color);
+	margin: 0;
+	padding: 0;
+}
+
+.container {
+	display: grid;
+	grid-template-areas: "header header"
+		"allgemeine-informationen allgemeine-informationen"
+		"interaktion-section interaktion-section"
+		"experimente experimente" "diskussion diskussion" "main main"
+		"footer footer";
+	grid-template-columns: 1fr 1fr;
+	gap: var(--gap);
+	max-width: 1200px;
+	margin: auto;
+	padding: 1rem;
+}
+
+/* Bestehende Definitionen erhalten */
+/* ... darunter folgt dein vorhandener Stil unverändert ... */
+
+/* Sticky Header */
+header {
+	position: sticky;
+	top: 0;
+	grid-area: header;
+	background: var(--primary-color);
+	color: white;
+	padding: 1.25rem;
+	border-radius: var(--border-radius);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	justify-content: space-between;
+}
+
+.header-inhalt h1 {
+	margin: 0;
+	font-size: 1.5rem;
+}
+
+/* Inhalt im Header nebeneinander ausrichten */
+.header-inhalt {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+header button {
+	padding: 0.5rem 1rem;
+	background: #2ecc71;
+	border: none;
+	border-radius: 5px;
+	color: white;
+	font-weight: bold;
+	cursor: pointer;
+}
+
+header button:hover {
+	background: #27ae60;
+}
+
+.allgemeine-informationen, .diskussion, .experimente, main, footer {
+	background: white;
+	padding: 1rem;
+	border-radius: var(--border-radius);
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.allgemeine-informationen {
+	grid-area: allgemeine-informationen;
+}
+
+.interaktion-section {
+	background: white;
+	padding: 1rem;
+	border-radius: var(--border-radius);
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+	margin-top: 2rem;
+	grid-area: interaktion-section;
+}
+
+.interaktion-ui {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	margin-bottom: 1rem;
+}
+
+textarea#userPrompt {
+	width: 100%;
+	height: 100px;
+	font-size: 1rem;
+	padding: 0.75rem;
+	border: 1px solid #ccc;
+	border-radius: 6px;
+	resize: vertical;
+}
+
+.button-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.button-row button {
+	background-color: #3498db;
+	color: white;
+	border: none;
+	padding: 0.6rem 1rem;
+	border-radius: 6px;
+	font-weight: bold;
+	cursor: pointer;
+	transition: background-color 0.3s;
+}
+
+.button-row button:hover {
+	background-color: #2980b9;
+}
+
+#suggestionsContainer {
+	margin-top: 1.5rem;
+}
+
+#suggestionsList {
+	list-style: none;
+	padding: 0;
+}
+
+#suggestionsList li {
+	display: inline-block;
+	background-color: #ecf0f1;
+	margin: 0.25rem;
+	padding: 0.5rem 0.75rem;
+	border-radius: 5px;
+	cursor: pointer;
+}
+
+#suggestionsList li:hover {
+	background-color: #d0d0d0;
+}
+
+#chartContainer {
+	margin-top: 2rem;
+}
+
+body.dark .interaktion-section, body.dark #suggestionsContainer, body.dark #chartContainer
+	{
+	background-color: #1e1e1e;
+	color: #e0e0e0;
+}
+
+body.dark textarea#userPrompt {
+	background-color: #2c2c2c;
+	color: #fff;
+	border-color: #555;
+}
+
+body.dark #suggestionsList li {
+	background-color: #3c3c3c;
+}
+
+body.dark #suggestionsList li:hover {
+	background-color: #555;
+}
+
+.experimente {
+	grid-area: experimente;
+}
+
+.diskussion {
+	grid-area: diskussion;
+}
+
+main {
+	grid-area: main;
+}
+
+footer {
+	grid-area: footer;
+	text-align: center;
+	background: var(--primary-color);
+	color: white;
+}
+
+.grid-container {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.collapsible-section .section-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.collapsible-section .toggle-button {
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-weight: bold;
+	font-size: 0.9rem;
+}
+
+.collapsible-section.collapsed .section-content {
+	display: none;
+}
+
+
+body.dark {
+	background: #121212;
+	color: #e0e0e0;
+}
+
+body.dark .toggle-button {
+	color: #ecf0f1;
+}
+
+body.dark .toggle-button:hover {
+	color: #2ecc71;
+}
+
+.config-button {
+	display: block;
+	margin-top: 10px;
+	padding: 0.5rem 1rem;
+	font-weight: bold;
+	border-radius: 5px;
+	border: none;
+	background-color: #2ecc71;
+	color: white;
+	cursor: pointer;
+}
+
+.config-button:hover {
+	background-color: #27ae60;
+}
+
+body.dark .config-button {
+	background-color: #2ecc71;
+	color: white;
+}
+
+body.dark .config-button:hover {
+	background-color: #27ae60;
+}
+
+/* Vorschau-Button */
+#toggle-screenshot {
+	background-color: #2ecc71; /* grün */
+	color: white;
+	border: none;
+	padding: 8px 14px;
+	border-radius: 6px;
+	cursor: pointer;
+	font-weight: bold;
+	transition: background-color 0.3s;
+}
+
+#toggle-screenshot:hover {
+	background-color: #27ae60;
+}
+
+/* Screenshot-Container */
+#screenshot-container {
+	background-color: #ffffff; /* Default: light */
+	padding: 10px;
+	border-radius: 8px;
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* DARK MODE Anpassungen */
+body.dark #screenshot-container {
+	background-color: #2c3e50; /* dunkler Hintergrund für Bildrahmen */
+	box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+}
+
+body.dark header, body.dark footer {
+	background: #2c3e50;
+	color: #ecf0f1;
+}
+
+body.dark .allgemeine-informationen, body.dark .diskussion, body.dark .experimente,
+	body.dark main {
+	background: #1e1e1e;
+	color: #e0e0e0;
+}
+
+body.dark canvas {
+	background: #2e2e2e;
+}
+
+/* Responsive Design */
+@media ( max-width : 768px) {
+	.container {
+		grid-template-areas: "header" "allgemeine-informationen" "interaktion-section" "experimente"
+			"diskussion" "main" "footer";
+		grid-template-columns: 1fr;
+	}
+	main {
+		grid-template-columns: 1fr;
+	}
+	th, td {
+		white-space: normal;
+		word-break: break-word;
+	}
+}
