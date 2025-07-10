@@ -136,83 +136,66 @@
 					title="Abschnitt ein- oder ausklappen">⬇️ Einklappen</button>
 			</div>
 			<div class="section-content" id="experimente-section">
-				<p>Zusätzlich zur Grundaufgabe wurden im Rahmen der Experimente
-					verschiedene Aspekte des Lernverhaltens und der
-					Generalisierungsfähigkeit des Feedforward Neural Networks (FFNN)
-					systematisch untersucht:</p>
+				<ol>
+					<li><strong>Architektur:</strong><br>
 
-				<h3>1) Einfluss der Modellarchitektur</h3>
-				<p>Erhöht man die Anzahl der Hidden-Layer von 1 oder 2 auf 3
-					und/oder die Anzahl der Neuronen pro Layer, lernt das Modell
-					schneller und kann die Trainingsdaten sehr gut bestimmen (Best-Fit
-					tritt früher ein). Dabei zeigte sich, dass Overfitting in diesem
-					Setup (glatte Ziel-Funktion, relativ viele Datenpunkte) nicht
-					unmittelbar auftrat, sondern erst bei sehr hohen Epochenzahlen.
-					Dies liegt unter anderem daran, dass ein großes Netzwerk bei einer
-					glatten Funktion zunächst eine längere "Underfitting"-Phase
-					durchläuft und erst mit fortschreitendem Training beginnt, das
-					vorhandene Rauschen in den Daten zu modellieren. Gerade bei stärker
-					verrauschten Daten war dennoch beobachtbar, dass Overfitting früher
-					und stärker auftrat, je größer die Architektur war.</p>
+						<p>Das Modell besteht aus einem Embedding-Layer mit einer
+							Ausgabedimension von 64 und einer Eingabesequenzlänge von 5
+							Tokens. Dies ermöglicht es dem Modell, sprachliche Abhängigkeiten
+							über einen größeren Bereich zu erfassen.</p>
 
-				<p>Die Wahl der Aktivierungsfunktion zeigte, dass ReLU gegenüber
-					tanh eine stabilere Konvergenz und geringeres Overfitting-Verhalten
-					aufwies.</p>
+						<p>An das Embedding schließen sich 2 hidden Layer (in sich
+							rekursiv) mit je 200 LSTM Units an. Tests mit mehr Layern haben
+							gezeigt, dass der Loss sehr langsam gesunken ist und die Dauer
+							des Trainings deutlich länger wurde. Die Erhöhung der Units hat
+							zu einer Verbesserung des Trainingsergebnisses geführt.</p>
+						<p>
+							Zur Vermeidung von Overfitting wurde Dropout mit einer Rate von
+							0,3 sowie ein recurrent Dropout von 0,2 in beiden LSTM-Schichten
+							eingesetzt. Die erste LSTM-Schicht gibt eine vollständige
+							Ausgabesequenz weiter (
+							<code>return_sequences=True</code>
+							), während die zweite nur den letzten Hidden State extrahiert, um
+							eine kompakte Repräsentation der Eingabesequenz zu erzeugen.
+						</p>
 
-				<h3>2) Einfluss der Datenmenge</h3>
-				<p>Bei einer Reduktion der Datenpunkte auf N = 50 (25 Train, 25
-					Test) war eine starke Überanpassung sichtbar; das Modell lernte die
-					Trainingsdaten, konnte aber nicht mehr gut generalisieren,
-					Overfitting trat früher auf. Bei Erhöhung auf N = 200 oder N = 500
-					wurde das Modell deutlich robuster und generalisierte wesentlich
-					besser. Overfitting trat später oder gar nicht mehr auf.</p>
+						<p>Die Ausgabe erfolgt über eine dichte Softmax-Schicht, deren
+							Dimension der Größe des verwendeten Vokabulars entspricht (10.000
+							Tokens). Diese Schicht gibt eine Wahrscheinlichkeitsverteilung
+							über alle potenziell nächsten Wörter zurück.</p>
 
-				<h3>3) Einfluss der Rauschstärke</h3>
-				<p>Bei starker Rauschvarianz (V ≥ 0.3) war es kaum noch möglich,
-					ein Modell zu trainieren, das die zugrunde liegende Funktion
-					zuverlässig abbildet. Bereits bei V = 0.1 zeigten sich leichte
-					Einbußen in der Generalisierung. Bei sehr niedrigem Rauschen (V ≤
-					0.01) entsprach das Verhalten weitgehend dem unverrauschten Fall.</p>
+						<p>Für das Training wurde der Adam-Optimierer mit einer
+							Lernrate von 0,001 verwendet, da sich dieser in Kombination mit
+							LSTM-Netzen als robust und stabil erwiesen hat. Als Loss-Funktion
+							wurde kategorische Kreuzentropie verwendet.</p>
+						<p>Das Modell wurde mit einer Batch-Größe von 32 über 60
+							Epochen hinweg trainiert. Die Anzahl der Epochen hat sich als
+							 am besten herausgestellt, weil loss und accuracy am dichtesten 
+							 beieinander waren.</p>
 
-				<h3>4) Einfluss der Lernrate</h3>
-				<p>Eine Lernrate von 0.01 erwies sich als gut geeignet. Bei
-					0.001 war das Training sehr langsam. Höhere Lernraten (≥ 0.05)
-					führten oft zu instabilem Verhalten oder Divergenz. Zu kleine
-					Lernraten brachten zudem die Gefahr von "zu frühem Overfitting", da
-					das Modell zu langsam optimierte.</p>
-
-				<h3>5) Dynamik des Overfittings</h3>
-				<p>Die Beobachtung der Lernkurven (Train-Loss vs. Test-Loss)
-					zeigte: Overfitting begann meist zwischen 500 und 15000 Epochen, je
-					nach Rauschen und Architektur. Bei höherer Modellkomplexität und
-					geringer Datenmenge trat Overfitting früher auf. Ein typisches
-					Signal war das Auseinanderdriften der Loss-Kurven nach einer Phase
-					synchronen Abfalls.</p>
-
-				<h3>6) Stabilität bei unterschiedlicher Initialisierung</h3>
-				<p>Mehrere Läufe mit unterschiedlichen Startwerten zeigten, dass
-					bei konstanter Architektur und Datenmenge die Resultate recht
-					stabil blieben. Bei kleinen Datensätzen (N = 50) und hohem Rauschen
-					waren die Schwankungen deutlich größer (z. B. Test-MSE von 0.1 bis
-					0.3).</p>
-
-				<h3>7) Generalisierung außerhalb des Trainingsbereichs</h3>
-				<p>Ein Experiment mit x-Werten im Bereich [-3, +3] zeigte, dass
-					das Modell erwartungsgemäß nur im Trainingsbereich [-2, +2]
-					zuverlässig vorhersagen konnte. Außerhalb dieses Bereichs
-					extrapolierte es stark unsicher und produzierte unrealistische
-					Werte. Dies unterstreicht die Bedeutung einer geeigneten
-					Datenabdeckung im Trainingsbereich.</p>
-
-				<h3>Fazit</h3>
-				<p>Die durchgeführten Experimente haben eindrucksvoll gezeigt,
-					wie Modellarchitektur, Datenmenge, Rauschstärke und
-					Optimierungsparameter das Lern- und Generalisierungsverhalten eines
-					neuronalen Netzes beeinflussen. Besonders wichtig ist dabei das
-					sorgfältige Monitoring von Overfitting anhand der Test-Loss-Kurve.
-					Die Nutzung von TensorFlow.js und die dynamische Visualisierung im
-					Browser erwiesen sich als sehr hilfreiche Werkzeuge für diese
-					Analyse.</p>
+						<p>Diese Architektur ermöglicht eine stabile, regulierte
+							Modellierung sprachlicher Abhängigkeiten mit verbesserter
+							Generalisierungsfähigkeit.</p>
+					<li><strong>Trefferquote bei Vorhersagen:</strong><br>
+						Die folgende Tabelle zeigt, wie oft das richtige Wort unter den
+						Top-k-Vorhersagen lag:
+						<ul>
+							<li>k=1: <span id="acc1">...</span> %
+							</li>
+							<li>k=5: <span id="acc5">...</span> %
+							</li>
+							<li>k=10: <span id="acc10">...</span> %
+							</li>
+							<li>k=20: <span id="acc20">...</span> %
+							</li>
+							<li>k=100: <span id="acc100">...</span> %
+							</li>
+						</ul> Optional: Perplexity = <span id="perplexity">...</span></li>
+					<li><strong>Rekonstruktion der Trainingsdaten:</strong><br>
+						Teilweise möglich. Das Modell kann längere Sequenzen korrekt
+						ergänzen. Dies kann unter Umständen Datenschutzprobleme aufwerfen,
+						z. B. wenn vertrauliche Formulierungen reproduziert werden.</li>
+				</ol>
 			</div>
 		</section>
 

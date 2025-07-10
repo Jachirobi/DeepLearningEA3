@@ -4,187 +4,229 @@ let autoModeActive = false;
 
 // Starte, sobald die Seite vollständig geladen ist
 window.addEventListener("load", async () => {
-  tf.setBackend("cpu");
+	tf.setBackend("cpu");
 
-  // Modell laden
-  model = await tf.loadLayersModel(
-    "https://jachirobi.github.io/DeepLearningEA3/model/model.json"
-  );
-  console.log("✅ Modell geladen.");
+	// Modell laden
+	model = await tf.loadLayersModel(
+		"https://jachirobi.github.io/DeepLearningEA3/model/model.json"
+	);
+	console.log("✅ Modell geladen.");
 
-  // Tokenizer laden
-  const tokenizerRes = await fetch("https://jachirobi.github.io/DeepLearningEA3/model/tokenizer_word_index.json");
-  const wordIndexData = await tokenizerRes.json();
-  tokenizer = new Tokenizer();
-  tokenizer.wordIndex = wordIndexData;
-  tokenizer.indexWord = Object.fromEntries(
-    Object.entries(wordIndexData).map(([k, v]) => [v, k])
-  );
-  tokenizer.vocabSize = Object.keys(tokenizer.wordIndex).length + 1;
+	// Tokenizer laden
+	const tokenizerRes = await fetch("https://jachirobi.github.io/DeepLearningEA3/model/tokenizer_word_index.json");
+	const wordIndexData = await tokenizerRes.json();
+	tokenizer = new Tokenizer();
+	tokenizer.wordIndex = wordIndexData;
+	tokenizer.indexWord = Object.fromEntries(
+		Object.entries(wordIndexData).map(([k, v]) => [v, k])
+	);
+	tokenizer.vocabSize = Object.keys(tokenizer.wordIndex).length + 1;
 
-  // Button-Handler
-  document.getElementById("resetBtn").addEventListener("click", () => {
-    document.getElementById("userPrompt").value = "";
-    document.getElementById("suggestionsList").innerHTML = "";
-  });
+	// Button-Handler
+	document.getElementById("resetBtn").addEventListener("click", () => {
+		document.getElementById("userPrompt").value = "";
+		document.getElementById("suggestionsList").innerHTML = "";
+	});
 
-  document.getElementById("weiterBtn").addEventListener("click", () => {
-    continueWithTopPrediction();
-  });
+	document.getElementById("weiterBtn").addEventListener("click", () => {
+		continueWithTopPrediction();
+	});
 
-  document.getElementById("autoBtn").addEventListener("click", () => {
-    if (!autoModeActive) runAutoPrediction(10);
-  });
+	document.getElementById("autoBtn").addEventListener("click", () => {
+		if (!autoModeActive) runAutoPrediction(10);
+	});
 
-  document.getElementById("stopBtn").addEventListener("click", () => {
-    autoModeActive = false;
-  });
+	document.getElementById("stopBtn").addEventListener("click", () => {
+		autoModeActive = false;
+	});
 
-  document.getElementById("predictBtn").addEventListener("click", async () => {
-    const prompt = document.getElementById("userPrompt").value.trim();
-    const suggestionsList = document.getElementById("suggestionsList");
-    suggestionsList.innerHTML = "";
+	document.getElementById("predictBtn").addEventListener("click", async () => {
+		const prompt = document.getElementById("userPrompt").value.trim();
+		const suggestionsList = document.getElementById("suggestionsList");
+		suggestionsList.innerHTML = "";
 
-    const wordCount = prompt.split(/\s+/).length;
-    if (wordCount < 3) {
-      const li = document.createElement("li");
-      li.textContent = "❗ Bitte mindestens 3 Wörter eingeben.";
-      li.style.color = "crimson";
-      suggestionsList.appendChild(li);
-      return;
-    }
+		//		const wordCount = prompt.split(/\s+/).length;
+		//		if (wordCount < 1) {
+		//			const li = document.createElement("li");
+		//			li.textContent = "❗ Bitte mindestens ein Wort eingeben.";
+		//			li.style.color = "crimson";
+		//			suggestionsList.appendChild(li);
+		//			return;
+		//		}
 
-    const predictions = await predictNextWords(prompt, 5);
-    if (!predictions) return;
+		const predictions = await predictNextWords(prompt, 5);
+		if (!predictions) return;
 
-    predictions.forEach(pred => {
-      const li = document.createElement("li");
-      li.textContent = `${pred.word} (${(pred.prob * 100).toFixed(1)}%)`;
-      li.addEventListener("click", () => {
-        document.getElementById("userPrompt").value += " " + pred.word;
-        document.getElementById("predictBtn").click();
-      });
-      suggestionsList.appendChild(li);
-    });
-  });
+		predictions.forEach(pred => {
+			const li = document.createElement("li");
+			li.textContent = `${pred.word} (${(pred.prob * 100).toFixed(1)}%)`;
+			li.addEventListener("click", () => {
+				const input = document.getElementById("userPrompt");
+				const endsWithSpace = /\s$/.test(input.value);
+				const lastChar = input.value.trim().slice(-1);
 
-  // Dark Mode Toggle
-  document.getElementById("darkModeToggle").addEventListener("click", () => {
-    const isDark = document.body.classList.toggle("dark");
-    document.getElementById("darkModeToggle").textContent =
-      isDark ? "☀️ Light Mode aktivieren" : "🌙 Dark Mode aktivieren";
+				const formattedWord = /[.!?]/.test(lastChar)
+					? capitalizeFirst(pred.word)
+					: pred.word;
 
-    const screenshotImg = document.getElementById("screenshot-img");
-    if (screenshotImg) {
-      screenshotImg.src = isDark ? "overfit-details_dark.png" : "overfit-details.png";
-    }
-  });
+				const needsSpace = !isPunctuation(formattedWord) && !endsWithSpace;
+				input.value += (needsSpace ? " " : "") + formattedWord;
 
-  document.querySelectorAll(".collapsible-section .toggle-button").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const section = btn.closest(".collapsible-section");
-      const contentId = btn.getAttribute("aria-controls");
-      const expanded = section.classList.toggle("collapsed");
+				document.getElementById("predictBtn").click();
+			});
 
-      btn.textContent = section.classList.contains("collapsed") ? "⬆️ Ausklappen" : "⬇️ Einklappen";
-      btn.setAttribute("aria-expanded", !expanded);
 
-      if (contentId) {
-        const content = document.getElementById(contentId);
-        if (content) {
-          content.setAttribute("aria-hidden", expanded ? "true" : "false");
-        }
-      }
-    });
-  });
+
+			suggestionsList.appendChild(li);
+		});
+	});
+
+	// Dark Mode Toggle
+	document.getElementById("darkModeToggle").addEventListener("click", () => {
+		const isDark = document.body.classList.toggle("dark");
+		document.getElementById("darkModeToggle").textContent =
+			isDark ? "☀️ Light Mode aktivieren" : "🌙 Dark Mode aktivieren";
+
+		const screenshotImg = document.getElementById("screenshot-img");
+		if (screenshotImg) {
+			screenshotImg.src = isDark ? "overfit-details_dark.png" : "overfit-details.png";
+		}
+	});
+
+	document.querySelectorAll(".collapsible-section .toggle-button").forEach(btn => {
+		btn.addEventListener("click", () => {
+			const section = btn.closest(".collapsible-section");
+			const contentId = btn.getAttribute("aria-controls");
+			const expanded = section.classList.toggle("collapsed");
+
+			btn.textContent = section.classList.contains("collapsed") ? "⬆️ Ausklappen" : "⬇️ Einklappen";
+			btn.setAttribute("aria-expanded", !expanded);
+
+			if (contentId) {
+				const content = document.getElementById(contentId);
+				if (content) {
+					content.setAttribute("aria-hidden", expanded ? "true" : "false");
+				}
+			}
+		});
+	});
 });
 
 // Tokenizer-Klasse
 class Tokenizer {
-  constructor() {
-    this.wordIndex = {};
-    this.indexWord = {};
-    this.vocabSize = 0;
-  }
+	constructor() {
+		this.wordIndex = {};
+		this.indexWord = {};
+		this.vocabSize = 0;
+	}
 
-  textsToSequences(text) {
-    return text
-      .toLowerCase()
-      .split(/\s+/)
-      .map(word => this.wordIndex[word] || 0);
-  }
+	textsToSequences(text) {
+		return text
+			.toLowerCase()
+			.split(/\s+/)
+			.map(word => this.wordIndex[word] || 0);
+	}
 
-  sequencesToTexts(seq) {
-    return seq.map(index => this.indexWord[index] || "<?>");
-  }
+	sequencesToTexts(seq) {
+		return seq.map(index => this.indexWord[index] || "<?>");
+	}
 }
+
+function isPunctuation(token) {
+	return /^[.,!?;:]$/.test(token);
+}
+
+
+function capitalizeFirst(word) {
+	return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
 
 // Vorhersage-Funktion
 async function predictNextWords(promptText, topK = 5) {
-  const words = promptText.trim().toLowerCase().split(/\s+/);
-  if (words.length < 3) return;
+	const words = promptText.trim().toLowerCase().split(/\s+/).filter(Boolean);
+	let inputSeq;
 
-  const lastWords = words.slice(-3);
-  const inputSeq = lastWords.map(w => tokenizer.wordIndex[w] || 0);
+	if (words.length === 0) {
+		inputSeq = [0, 0, 0]; // Bonusidee: Leere Eingabe → Vorschlag von Satzanfängen
+	} else {
+		const lastWords = words.slice(-3);
+		inputSeq = Array(3 - lastWords.length).fill(0).concat(
+			lastWords.map(w => tokenizer.wordIndex[w] || 0)
+		);
+	}
 
-  const inputTensor = tf.tensor2d([inputSeq], [1, 3]);
-  const prediction = model.predict(inputTensor);
-  const probs = await prediction.data();
+	const inputTensor = tf.tensor2d([inputSeq], [1, 3]);
+	const prediction = model.predict(inputTensor);
+	const probs = await prediction.data();
 
-  const topIndices = Array.from(probs)
-    .map((p, i) => ({ word: tokenizer.indexWord[i], prob: p }))
-    .sort((a, b) => b.prob - a.prob)
-    .slice(0, topK);
+	const topIndices = Array.from(probs)
+		.map((p, i) => ({ word: tokenizer.indexWord[i], prob: p }))
+		.filter(entry => entry.word && entry.word.toLowerCase() !== "<unk>")
+		.sort((a, b) => b.prob - a.prob)
+		.slice(0, topK);
 
-  return topIndices;
+	return topIndices;
 }
+
 
 // „Weiter“-Button Vorhersage
 async function continueWithTopPrediction() {
-  const promptInput = document.getElementById("userPrompt");
-  const currentText = promptInput.value.trim();
+	const promptInput = document.getElementById("userPrompt");
+	const currentText = promptInput.value.trim();
 
-  if (currentText.split(/\s+/).length < 3) {
-    alert("Bitte mindestens 3 Wörter eingeben, um fortzufahren.");
-    return;
-  }
+	const predictions = await predictNextWords(currentText, 1);
+	if (!predictions || predictions.length === 0) return;
 
-  const predictions = await predictNextWords(currentText, 1);
-  if (!predictions || predictions.length === 0) return;
+	const nextWord = predictions[0].word;
+	const endsWithSpace = /\s$/.test(promptInput.value);
+	const lastChar = currentText.slice(-1);
+	const formattedWord = /[.!?]/.test(lastChar)
+		? capitalizeFirst(nextWord)
+		: nextWord;
 
-  const nextWord = predictions[0].word;
-  promptInput.value = currentText + " " + nextWord;
+	const needsSpace = !isPunctuation(formattedWord) && !endsWithSpace;
+	promptInput.value += (needsSpace ? " " : "") + formattedWord;
 
-  document.getElementById("predictBtn").click();
+
+
+
+
+	document.getElementById("predictBtn").click();
 }
 
 // Automatische Vorhersage (max. 10 Wörter)
 async function runAutoPrediction(maxWords = 10) {
-  autoModeActive = true;
-  const promptInput = document.getElementById("userPrompt");
+	autoModeActive = true;
+	const promptInput = document.getElementById("userPrompt");
 
-  for (let i = 0; i < maxWords; i++) {
-    document.getElementById("autoBtn").disabled = true;
+	for (let i = 0; i < maxWords; i++) {
+		document.getElementById("autoBtn").disabled = true;
 
-    if (!autoModeActive) break;
+		if (!autoModeActive) break;
 
-    const prompt = promptInput.value.trim();
-    if (prompt.split(/\s+/).length < 3) {
-      alert("Bitte mindestens 3 Wörter eingeben.");
-      break;
-    }
+		const prompt = promptInput.value.trim();
 
-    const predictions = await predictNextWords(prompt, 1);
-    if (!predictions || predictions.length === 0) break;
+		const predictions = await predictNextWords(prompt, 1);
+		if (!predictions || predictions.length === 0) break;
 
-    const nextWord = predictions[0].word;
-    promptInput.value += " " + nextWord;
+		const nextWord = predictions[0].word;
+		const endsWithSpace = /\s$/.test(prompt);
+		const lastChar = prompt.slice(-1);
+		const formattedWord = /[.!?]/.test(lastChar)
+			? capitalizeFirst(nextWord)
+			: nextWord;
 
-    await new Promise(resolve => setTimeout(resolve, 300));
-    await document.getElementById("predictBtn").click();
+		const needsSpace = !isPunctuation(formattedWord) && !endsWithSpace;
+		promptInput.value += (needsSpace ? " " : "") + formattedWord;
 
-    document.getElementById("autoBtn").disabled = false;
-  }
 
-  autoModeActive = false;
+
+		await new Promise(resolve => setTimeout(resolve, 300));
+		await document.getElementById("predictBtn").click();
+
+		document.getElementById("autoBtn").disabled = false;
+	}
+
+	autoModeActive = false;
 }
