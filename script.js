@@ -1,56 +1,55 @@
+let tokenizer;
+let xs;
+let ys;
+let model;
+let autoModeActive = false;
+
+class Tokenizer {
+	
+  constructor() {
+    this.wordIndex = {};
+    this.indexWord = {};
+    this.vocabSize = 0;
+  }
+
+  fitOnText(text) {
+    const words = text.toLowerCase().split(/\s+/);
+    const uniqueWords = [...new Set(words)];
+
+    uniqueWords.forEach((word, idx) => {
+      this.wordIndex[word] = idx + 1; // 0 für Padding reserviert
+      this.indexWord[idx + 1] = word;
+    });
+
+    this.vocabSize = uniqueWords.length + 1; // +1 für Padding
+  }
+
+  textsToSequences(text) {
+    return text
+      .toLowerCase()
+      .split(/\s+/)
+      .map(word => this.wordIndex[word] || 0);
+  }
+
+  sequencesToTexts(seq) {
+    return seq.map(index => this.indexWord[index] || "<?>");
+  }
+}
+
 // Starte, sobald die Seite vollständig geladen ist
 window.addEventListener("load", async () => {
 
-	const trainingText = `
-	  das haus ist groß . das haus ist schön . der hund ist klein . der hund ist laut .
-	  das haus ist neu . der hund ist draußen .
-	`;
+	tf.setBackend('cpu');
+	
+	await loadLeipzigCorpus("https://jachirobi.github.io/DeepLearningEA3/data/deu_news_2024_1M-sentences.txt");
 	
 	let autoModeActive = false;
 
-	class Tokenizer {
-		
-	  constructor() {
-	    this.wordIndex = {};
-	    this.indexWord = {};
-	    this.vocabSize = 0;
-	  }
-
-	  fitOnText(text) {
-	    const words = text.toLowerCase().split(/\s+/);
-	    const uniqueWords = [...new Set(words)];
-
-	    uniqueWords.forEach((word, idx) => {
-	      this.wordIndex[word] = idx + 1; // 0 für Padding reserviert
-	      this.indexWord[idx + 1] = word;
-	    });
-
-	    this.vocabSize = uniqueWords.length + 1; // +1 für Padding
-	  }
-
-	  textsToSequences(text) {
-	    return text
-	      .toLowerCase()
-	      .split(/\s+/)
-	      .map(word => this.wordIndex[word] || 0);
-	  }
-
-	  sequencesToTexts(seq) {
-	    return seq.map(index => this.indexWord[index] || "<?>");
-	  }
-	}
-	
-	const tokenizer = new Tokenizer();
-	tokenizer.fitOnText(trainingText);
-
-	const tokenized = tokenizer.textsToSequences(trainingText);
-	const { inputs, labels } = createSequences(tokenized, 3);
-
 	// Tensor vorbereiten
-	const xs = tf.tensor2d(inputs, [inputs.length, 3]);
-	const ys = tf.oneHot(labels, tokenizer.vocabSize);
+	// const xs => entfernt, global deklariert oben = tf.tensor2d(inputs, [inputs.length, 3]);
+	// const ys => entfernt, global deklariert oben = tf.oneHot(labels, tokenizer.vocabSize);
 
-	const model = tf.sequential();
+	// const model => entfernt, global deklariert oben = tf.sequential();
 
 	model.add(tf.layers.embedding({
 	  inputDim: tokenizer.vocabSize,
@@ -242,5 +241,29 @@ window.addEventListener("load", async () => {
 	    suggestionsList.appendChild(li);
 	  });
 	});
+	
+	async function loadLeipzigCorpus(filename) {
+ 	 tokenizer = new Tokenizer();
+	  const res = await fetch(filename);
+	  const raw = await res.text();
+
+	  // Zeilen parsen
+	  const lines = raw.split('\n').map(line => {
+	    // Nummern und Tabs/Leerzeichen löschen
+	    return line.replace(/^\s*\d+\s+/, '').trim();
+	  });
+
+	  // Saubere Sätze zusammenfügen
+	  const cleanText = lines.filter(l => l.length).join(' ');
+
+	  tokenizer.fitOnText(cleanText);
+	  const tokens = tokenizer.textsToSequences(cleanText);
+	  const { inputs, labels } = createSequences(tokens, 3);
+	  xs = tf.tensor2d(inputs, [inputs.length, 3]);
+	  ys = tf.oneHot(labels, tokenizer.vocabSize);
+
+	  console.log("✅ Leipzig-Korpus geladen:", inputs.length, "Sequenzen");
+	}
+
 
 });
