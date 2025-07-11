@@ -167,17 +167,40 @@ function formatWordForContext(currentText, predictedWord) {
 	return predictedWord.toLowerCase();
 }
 
+function sampleFromDistribution(probs, temperature = 1.0) {
+	const adjusted = probs.map(p => Math.pow(p, 1 / temperature));
+	const sum = adjusted.reduce((a, b) => a + b, 0);
+	const normalized = adjusted.map(p => p / sum);
+
+	const r = Math.random();
+	let cumSum = 0;
+	for (let i = 0; i < normalized.length; i++) {
+		cumSum += normalized[i];
+		if (r < cumSum) return i;
+	}
+	return normalized.length - 1;
+}
+
 
 // Vorhersage-Funktion
 async function predictNextWords(promptText, topK = 5) {
-	const words = promptText.trim().toLowerCase().split(/\s+/).filter(Boolean);
-	const lastWords = words.slice(-5);  // egal wie viele da sind
-	const inputSeq = Array(5 - lastWords.length).fill(0).concat(
-		lastWords.map(w => {
-			const index = tokenizer.wordIndex[w] || 0;
-			return (index > 0 && index < MAX_VOCAB_SIZE) ? index : 0;
-		})
-	);
+	const tokens = promptText
+	  .replace(/([.,!?;:])/g, " $1 ")
+	  .trim()
+	  .split(/\s+/)
+	  .filter(Boolean);
+
+	  const inputTokens = tokens.slice(-5); // Nur die letzten 5 Tokens verwenden
+	  const padding = Array(5 - inputTokens.length).fill(0); // ggf. links mit 0 auffüllen
+
+	  const inputSeq = padding.concat(
+	  	inputTokens.map(w => {
+	  		const index = tokenizer.wordIndex[w] || 0;
+	  		return (index > 0 && index < MAX_VOCAB_SIZE) ? index : 0;
+	  	})
+	  );
+
+
 
 
 
@@ -185,13 +208,27 @@ async function predictNextWords(promptText, topK = 5) {
 	const prediction = model.predict(inputTensor);
 	const probs = await prediction.data();
 
-	const topIndices = Array.from(probs)
-		.map((p, i) => ({ word: tokenizer.indexWord[i], prob: p }))
-		.filter(entry => entry.word && entry.word.toLowerCase() !== "<unk>")
-		.sort((a, b) => b.prob - a.prob)
-		.slice(0, topK);
+//	const topIndices = Array.from(probs)
+//		.map((p, i) => ({ word: tokenizer.indexWord[i], prob: p }))
+//		.filter(entry => entry.word && entry.word.toLowerCase() !== "<unk>")
+//		.sort((a, b) => b.prob - a.prob)
+//		.slice(0, topK);
 
-	return topIndices;
+//	return topIndices;
+
+const wordsWithProbs = Array.from(probs)
+	.map((p, i) => ({ word: tokenizer.indexWord[i], prob: p }))
+	.filter(entry => entry.word && entry.word.toLowerCase() !== "<unk>");
+
+const sampled = [];
+for (let i = 0; i < topK; i++) {
+	const index = sampleFromDistribution(wordsWithProbs.map(w => w.prob), 0.8); // temperature = 0.8 z.B.
+	sampled.push(wordsWithProbs[index]);
+	wordsWithProbs.splice(index, 1); // entferne bereits gezogenes Wort
+}
+
+return sampled;
+
 }
 
 

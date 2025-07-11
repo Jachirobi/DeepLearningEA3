@@ -54,23 +54,23 @@
 
 				<h2>Interaktion</h2>
 				<ul>
-					<li><strong>I1)</strong> Der Nutzer kann einen Text (Prompt)
+					<li><strong>1)</strong> Der Nutzer kann einen Text (Prompt)
 						eingeben. Dieser muss aus vollständigen, durch Leerzeichen
 						getrennten Wörtern bestehen. Durch Klick auf den Button <em>„Vorhersage“</em>
 						werden die wahrscheinlichsten folgenden Wörter mit
 						Wahrscheinlichkeiten angezeigt. Der Nutzer kann eines dieser
 						Wörter auswählen, welches dann angehängt wird. Danach startet
 						automatisch eine neue Vorhersage.</li>
-					<li><strong>I2)</strong> Mit dem Button <em>„Weiter“</em> kann
+					<li><strong>2)</strong> Mit dem Button <em>„Weiter“</em> kann
 						das wahrscheinlichste Wort automatisch angehängt werden. Danach
 						startet erneut eine Vorhersage. Wiederholtes Klicken erzeugt einen
 						fortlaufenden Text.</li>
-					<li><strong>I3)</strong> Über den Button <em>„Auto“</em>
-						können automatisch bis zu 10 Wörter vorhergesagt werden. Dieser
-						Vorgang kann mit dem Button <em>„Stopp“</em> unterbrochen werden.</li>
-					<li><strong>I4)</strong> Mit dem Button <em>„Reset“</em>
-						werden sowohl der eingegebene Text als auch das Netzwerk
-						zurückgesetzt.</li>
+					<li><strong>3)</strong> Über den Button <em>„Auto“</em> können
+						automatisch bis zu 10 Wörter vorhergesagt werden.</li>
+					<li><strong>4)</strong> Dieser Vorgang kann mit dem Button <em>„Stopp“</em>
+						unterbrochen werden.</li>
+					<li><strong>5)</strong> Mit dem Button <em>„Reset“</em> werden
+						sowohl der eingegebene Text als auch das Netzwerk zurückgesetzt.</li>
 				</ul>
 
 				<h3>Buttons</h3>
@@ -79,7 +79,7 @@
 					<li>Weiter</li>
 					<li>Auto</li>
 					<li>Stopp</li>
-					<li>Wortauswahl (bei I1)</li>
+					<li>Reset</li>
 				</ul>
 
 				<h2>Experimente und Fragestellungen</h2>
@@ -169,9 +169,9 @@
 							LSTM-Netzen als robust und stabil erwiesen hat. Als Loss-Funktion
 							wurde kategorische Kreuzentropie verwendet.</p>
 						<p>Das Modell wurde mit einer Batch-Größe von 64 über 60
-							Epochen hinweg trainiert. Die Anzahl der Epochen hat sich als
-							 am besten herausgestellt, weil loss und accuracy am dichtesten 
-							 beieinander waren.</p>
+							Epochen hinweg trainiert. Die Anzahl der Epochen hat sich als am
+							besten herausgestellt, weil loss und accuracy am dichtesten
+							beieinander waren.</p>
 
 						<p>Diese Architektur ermöglicht eine stabile, regulierte
 							Modellierung sprachlicher Abhängigkeiten mit verbesserter
@@ -192,9 +192,21 @@
 							</li>
 						</ul> Optional: Perplexity = <span id="perplexity">...</span></li>
 					<li><strong>Rekonstruktion der Trainingsdaten:</strong><br>
-						Teilweise möglich. Das Modell kann längere Sequenzen korrekt
-						ergänzen. Dies kann unter Umständen Datenschutzprobleme aufwerfen,
-						z. B. wenn vertrauliche Formulierungen reproduziert werden.</li>
+						<p>Das trainierte LSTM-Sprachmodell speichert keine konkreten
+							Trainingssätze, sondern lediglich statistische Muster in seinen
+							Gewichtungen. Eine direkte Rekonstruktion der ursprünglichen
+							Trainingsdaten ist daher nicht möglich.</p>
+
+						<p>Allerdings kann es bei häufigen oder prägnanten
+							Formulierungen, insbesondere bei kleinem Datensatz oder
+							Overfitting, vorkommen, dass Teile des Trainingsmaterials
+							sinngemäß oder sogar wörtlich reproduziert werden. In solchen
+							Fällen besteht ein gewisses Datenschutzrisiko, insbesondere wenn
+							personenbezogene Daten im Training enthalten waren. Auch wenn das
+							Risiko bei einem Modell mit begrenztem Vokabular (z. B. 5000
+							Wörter) und normalisierten Daten gering ist, sollte man bei der
+							Veröffentlichung des Modells auf mögliche Rückschlüsse auf
+							sensible Inhalte achten.</p></li>
 				</ol>
 			</div>
 		</section>
@@ -255,57 +267,102 @@
 				<p>In der Lösung wurden folgende Frameworks und Libraries
 					verwendet:</p>
 				<ul>
-					<li><strong>TensorFlow.js</strong>: zur Implementierung und
-						Ausführung des neuronalen Netzes (FFNN) direkt im Browser
-						(Training, Evaluation und Inferenz).</li>
-					<li><strong>Chart.js</strong>: zur Visualisierung der
-						Lernkurven (Train- und Test-Loss über Epochen).</li>
+					<li><strong>TensorFlow / Keras</strong>: Zum Erstellen,
+						Trainieren und Speichern des LSTM-basierten Language Models
+						(Sequential, LSTM, Embedding, Adam, EarlyStopping, etc.).</li>
+					<li><strong>TensorFlow.js</strong>: Zum Konvertieren des
+						Keras-Modells in ein browserkompatibles Format für die
+						clientseitige Vorhersage.</li>
+					<li><strong>NumPy</strong>: Für die effiziente Verarbeitung
+						von Trainingsdaten (z. B. Sequenzen, Labels, Arrays).</li>
+					<li><strong>re (Regular Expressions)</strong>: Zum Aufbereiten
+						und Tokenisieren des Textkorpus (z. B. Satzzeichen trennen).</li>
+					<li><strong>HTML, CSS, JavaScript</strong>: Zum Aufbau der
+						Web-Oberfläche inklusive Texteingabe, Vorhersageanzeige und
+						Interaktion mit dem TensorFlow.js-Modell im Browser.</li>
 				</ul>
-				<p>
-					Technische Besonderheiten der Lösung: Das gesamte Training und die
-					Modellberechnungen erfolgen vollständig clientseitig im Browser mit
-					TensorFlow.js, ohne Server oder Backend. Die Lernkurve wird
-					performant aufgebaut, indem der Train-Loss direkt aus
-					<code>fit()</code>
-					und der Test-Loss gezielt mit
-					<code>evaluate()</code>
-					ermittelt wird. Zusätzlich sind interaktive Steuerelemente (Slider
-					und Dropdowns) integriert, um Datenparameter (N, Rauschvarianz) und
-					Modellarchitektur (Layer, Neuronen, Aktivierungsfunktion) dynamisch
-					anzupassen. Eine Fortschrittsanzeige informiert während des
-					Trainings über den aktuellen Stand.
-				</p>
+				<p>Das Modell nutzt ein gestapeltes LSTM mit Dropout und
+					recurrent_dropout, um Overfitting zu vermeiden. Die Trainingsdaten
+					werden mithilfe eines festen Werts von 5 Wörtern verarbeitet. Das
+					Modell wird mit EarlyStopping trainiert und in .keras und .tfjs
+					exportiert. Im Frontend wird durch Padding und Begrenzung der
+					Wortindizes sichergestellt, dass Eingabesequenzen modellkompatibel
+					bleiben. Im Testskript wird zusätzlich die Top-k-Genauigkeit und
+					Perplexity als Evaluationsmaß berechnet.</p>
 
 				<h3>2) Fachlich</h3>
-				<p>Die Logik der Implementierung orientiert sich an der
-					Aufgabenstellung: Zunächst wird ein unverrauschter Datensatz
-					generiert und für das Modelltraining genutzt. Anschließend werden
-					verrauschte Daten erzeugt und in zwei Varianten trainiert (Best-Fit
-					und Overfit), um die Auswirkungen von Epochenzahl und
-					Modellkomplexität auf die Generalisierungsfähigkeit zu untersuchen.
-					Für das Training wird der Adam-Optimizer mit Lernrate 0.01 und
-					Batch-Size 32 eingesetzt. Die Modelle bestehen aus 1–3
-					Hidden-Layern mit konfigurierbarer Neuronenzahl und
-					ReLU-Aktivierung; der Output-Layer ist linear.</p>
-				<p>Durch die einheitliche und kontrollierte Visualisierung der
-					Lernkurven sowie der Modellvorhersagen konnten wichtige Effekte wie
-					Overfitting und Bias-Variance-Verhalten beobachtet und
-					nachvollzogen werden. Besonderer Wert wurde darauf gelegt, die
-					Testdaten strikt nur zur Evaluation zu verwenden, um eine
-					realistische Einschätzung der Modellgeneraliserung zu
-					gewährleisten.</p>
-				<p>Um den Nutzer Hilfestellungen zu geben, wurden an den
-					wichtigsten Stellen Tooltips integriert. Für die Barrierefreiheit
-					wurde versucht alles zu berücksichtigen. Dazu gehören
-					beispielsweise aria-label, alt-texte oder Kontraste bei der
-					Farbauswahl.</p>
 				<p>
-					Quellen: TensorFlow.js Dokumentation (<a
-						href="https://js.tensorflow.org" target="_blank">https://js.tensorflow.org</a>),
-					Chart.js Dokumentation (<a href="https://www.chartjs.org"
-						target="_blank">https://www.chartjs.org</a>), begleitende
-					Vorlesungsfolien und Übungsmaterialien.
+					Die vorliegende Anwendung basiert auf einem autoregressiven Modell
+					zur <strong>nächsten Wortvorhersage</strong>, das mithilfe eines
+					LSTM-Netzwerks realisiert wurde. Grundlage für das Training bildet
+					ein deutschsprachiger Korpus, der aus dem <a
+						href="https://wortschatz.uni-leipzig.de/en/download/German?utm_source=chatgpt.com"
+						target="_blank">Wortschatz-Korpus der Universität Leipzig</a>
+					stammt. Der Text wurde im Vorfeld bereinigt und tokenisiert, wobei
+					insbesondere Satzzeichen separiert und Groß-/Kleinschreibung
+					erhalten blieben.
 				</p>
+
+				<p>
+					Das Modell verarbeitet Wortsequenzen mit einer Länge von fünf
+					Tokens und sagt jeweils das darauffolgende Wort vorher. Es wurde
+					mit zwei gestapelten LSTM-Schichten (je 200 Einheiten) trainiert
+					und durch Dropout regularisiert. Während des Trainings wurde
+					<code>EarlyStopping</code>
+					verwendet, um Überanpassung zu vermeiden. Als Optimierer kam
+					<code>Adam</code>
+					mit einer Lernrate von 0,001 zum Einsatz.
+				</p>
+
+				<p>Nach erfolgreichem Training wurde das Modell ins
+					TensorFlow.js-Format konvertiert und in eine interaktive
+					Weboberfläche integriert. Diese erlaubt es Nutzer:innen, eigene
+					Texte einzugeben, automatische Wortvorschläge zu generieren oder
+					Schritt für Schritt Texte fortzusetzen. Die Vorschläge basieren auf
+					den wahrscheinlichsten nächsten Wörtern laut Modell – inklusive
+					Prozentwerten.</p>
+
+				<p>
+					Zur qualitativen Bewertung des Modells wurden neben der klassischen
+					Genauigkeit auch <em>Top-k-Genauigkeiten</em> (k=1, 5, 10, 20, 100)
+					und die <strong>Perplexity</strong> als Kennzahlen berechnet. Diese
+					geben Aufschluss über die Fähigkeit des Modells, plausible
+					Folgewörter im Sprachkontext zu wählen.
+				</p>
+				<p>
+					<strong>Quellen & verwendete Technologien:</strong><br>
+					Wortschatz-Korpus der Universität Leipzig<br> (<a
+						href="https://wortschatz.uni-leipzig.de/en/download/German?utm_source=chatgpt.com"
+						target="_blank">wortschatz.uni-leipzig.de</a>)<br> TensorFlow
+					und Keras – für Modellarchitektur, Training und Export<br> (<a
+						href="https://www.tensorflow.org/" target="_blank">tensorflow.org</a>)<br>
+
+					TensorFlow.js – für die Modellnutzung im Browser<br> (<a
+						href="https://js.tensorflow.org" target="_blank">js.tensorflow.org</a>)<br>
+
+					NumPy – für Array-Manipulation im Trainingsprozess<br> (<a
+						href="https://numpy.org" target="_blank">numpy.org</a>)<br>
+
+					Reguläre Ausdrücke (re) – zur Textvorverarbeitung in Python<br>
+					(<a href="https://docs.python.org/3/library/re.html"
+						target="_blank">python.org › re</a>)<br> Chart.js – für
+					Visualisierungen im Frontend (optional/ergänzend)<br> (<a
+						href="https://www.chartjs.org" target="_blank">chartjs.org</a>)<br>
+
+					HTML, CSS, JavaScript (ES6) – für die Benutzeroberfläche,
+					Eingabelogik und Eventsteuerung<br> (<a
+						href="https://developer.mozilla.org/en-US/docs/Web"
+						target="_blank">MDN Web Docs</a>)<br> Fetch API – zum Laden
+					des Tokenizer-Wortindex im Browser<br> (<a
+						href="https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API"
+						target="_blank">MDN Fetch API</a>)<br> Google Fonts – für
+					typografische Gestaltung<br> (<a
+						href="https://fonts.google.com" target="_blank">fonts.google.com</a>)<br>
+
+					Vorlesungsfolien, Übungen und Diskussionen im Rahmen der
+					Lehrveranstaltung
+				</p>
+
 			</div>
 		</main>
 		<footer>Thomas Brehmer</footer>
