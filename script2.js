@@ -1,6 +1,7 @@
 let tokenizer;
 let model;
 let autoModeActive = false;
+const MAX_VOCAB_SIZE = 5000; 
 
 // Starte, sobald die Seite vollständig geladen ist
 window.addEventListener("load", async () => {
@@ -174,9 +175,10 @@ async function predictNextWords(promptText, topK = 5) {
 	const inputSeq = Array(5 - lastWords.length).fill(0).concat(
 		lastWords.map(w => {
 			const index = tokenizer.wordIndex[w] || 0;
-			return Math.min(index, tokenizer.vocabSize - 1); // Begrenze auf Modellbereich
+			return (index > 0 && index < MAX_VOCAB_SIZE) ? index : 0;
 		})
 	);
+
 
 
 	const inputTensor = tf.tensor2d([inputSeq], [1, 5]);
