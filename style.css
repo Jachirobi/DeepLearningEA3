@@ -129,6 +129,11 @@ textarea#userPrompt {
 	background-color: #2980b9;
 }
 
+.button-row button i {
+	margin-right: 0.4em;
+}
+
+
 #suggestionsContainer {
 	margin-top: 1.5rem;
 }
@@ -174,6 +179,15 @@ body.dark #suggestionsList li {
 body.dark #suggestionsList li:hover {
 	background-color: #555;
 }
+
+body.dark .button-row button {
+	background-color: #555;
+	color: #fff;
+}
+body.dark .button-row button:hover {
+	background-color: #888;
+}
+
 
 .experimente {
 	grid-area: experimente;
