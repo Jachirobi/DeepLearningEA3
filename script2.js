@@ -69,8 +69,8 @@ window.addEventListener("load", async () => {
 					? capitalizeFirst(pred.word)
 					: pred.word;
 
-				const needsSpace = !isPunctuation(formattedWord) && !endsWithSpace;
-				input.value += (needsSpace ? " " : "") + formattedWord;
+				appendToken(input, formattedWord);
+
 
 				document.getElementById("predictBtn").click();
 			});
@@ -121,11 +121,14 @@ class Tokenizer {
 	}
 
 	textsToSequences(text) {
-		return text
+		const tokens = text
+			.replace(/([.,!?;:])/g, " $1 ")   // Satzzeichen abtrennen
 			.toLowerCase()
-			.split(/\s+/)
-			.map(word => this.wordIndex[word] || 0);
+			.trim()
+			.split(/\s+/);                   // tokenisieren
+		return tokens.map(word => this.wordIndex[word] || 0);
 	}
+
 
 	sequencesToTexts(seq) {
 		return seq.map(index => this.indexWord[index] || "<?>");
@@ -141,22 +144,42 @@ function capitalizeFirst(word) {
 	return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
+function appendToken(inputEl, token) {
+	const current = inputEl.value;
+	const endsWithSpace = /\s$/.test(current);
+	const isPunct = isPunctuation(token);
+
+	if (isPunct) {
+		// Kein Leerzeichen vor Satzzeichen
+		inputEl.value = current.trimEnd() + token + " ";
+	} else {
+		// Leerzeichen vor Wort, falls nicht vorhanden
+		inputEl.value = current + (endsWithSpace ? "" : " ") + token;
+	}
+}
+
+function formatWordForContext(currentText, predictedWord) {
+	const lastChar = currentText.trim().slice(-1);
+	if (/[.!?]/.test(lastChar)) {
+		return capitalizeFirst(predictedWord);
+	}
+	return predictedWord.toLowerCase();
+}
+
 
 // Vorhersage-Funktion
 async function predictNextWords(promptText, topK = 5) {
 	const words = promptText.trim().toLowerCase().split(/\s+/).filter(Boolean);
-	let inputSeq;
+	const lastWords = words.slice(-5);  // egal wie viele da sind
+	const inputSeq = Array(5 - lastWords.length).fill(0).concat(
+		lastWords.map(w => {
+			const index = tokenizer.wordIndex[w] || 0;
+			return Math.min(index, tokenizer.vocabSize - 1); // Begrenze auf Modellbereich
+		})
+	);
 
-	if (words.length === 0) {
-		inputSeq = [0, 0, 0]; // Bonusidee: Leere Eingabe → Vorschlag von Satzanfängen
-	} else {
-		const lastWords = words.slice(-3);
-		inputSeq = Array(3 - lastWords.length).fill(0).concat(
-			lastWords.map(w => tokenizer.wordIndex[w] || 0)
-		);
-	}
 
-	const inputTensor = tf.tensor2d([inputSeq], [1, 3]);
+	const inputTensor = tf.tensor2d([inputSeq], [1, 5]);
 	const prediction = model.predict(inputTensor);
 	const probs = await prediction.data();
 
@@ -170,6 +193,7 @@ async function predictNextWords(promptText, topK = 5) {
 }
 
 
+
 // „Weiter“-Button Vorhersage
 async function continueWithTopPrediction() {
 	const promptInput = document.getElementById("userPrompt");
@@ -181,12 +205,14 @@ async function continueWithTopPrediction() {
 	const nextWord = predictions[0].word;
 	const endsWithSpace = /\s$/.test(promptInput.value);
 	const lastChar = currentText.slice(-1);
-	const formattedWord = /[.!?]/.test(lastChar)
-		? capitalizeFirst(nextWord)
-		: nextWord;
+//	const formattedWord = /[.!?]/.test(lastChar)
+//		? capitalizeFirst(nextWord)
+//		: nextWord;
+		
+	const formattedWord = formatWordForContext(currentText, nextWord);
 
-	const needsSpace = !isPunctuation(formattedWord) && !endsWithSpace;
-	promptInput.value += (needsSpace ? " " : "") + formattedWord;
+	appendToken(promptInput, formattedWord);
+
 
 
 
@@ -217,8 +243,8 @@ async function runAutoPrediction(maxWords = 10) {
 			? capitalizeFirst(nextWord)
 			: nextWord;
 
-		const needsSpace = !isPunctuation(formattedWord) && !endsWithSpace;
-		promptInput.value += (needsSpace ? " " : "") + formattedWord;
+		appendToken(promptInput, formattedWord);
+
 
 
 
