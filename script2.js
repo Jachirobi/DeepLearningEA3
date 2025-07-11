@@ -1,7 +1,7 @@
 let tokenizer;
 let model;
 let autoModeActive = false;
-const MAX_VOCAB_SIZE = 5000; 
+const MAX_VOCAB_SIZE = 10000; 
 
 // Starte, sobald die Seite vollständig geladen ist
 window.addEventListener("load", async () => {

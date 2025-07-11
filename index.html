@@ -151,7 +151,7 @@
 							zu einer Verbesserung des Trainingsergebnisses geführt.</p>
 						<p>
 							Zur Vermeidung von Overfitting wurde Dropout mit einer Rate von
-							0,3 sowie ein recurrent Dropout von 0,2 in beiden LSTM-Schichten
+							0,2 sowie ein recurrent Dropout von 0,1 in beiden LSTM-Schichten
 							eingesetzt. Die erste LSTM-Schicht gibt eine vollständige
 							Ausgabesequenz weiter (
 							<code>return_sequences=True</code>
@@ -168,10 +168,9 @@
 							Lernrate von 0,001 verwendet, da sich dieser in Kombination mit
 							LSTM-Netzen als robust und stabil erwiesen hat. Als Loss-Funktion
 							wurde kategorische Kreuzentropie verwendet.</p>
-						<p>Das Modell wurde mit einer Batch-Größe von 64 über 60
-							Epochen hinweg trainiert. Die Anzahl der Epochen hat sich als am
-							besten herausgestellt, weil loss und accuracy am dichtesten
-							beieinander waren.</p>
+						<p>Das Modell wurde mit einer Batch-Größe von 128 über 9
+							Epochen hinweg trainiert. Die Anzahl der Epochen hat wurde
+							mittels early stoppings ermittelt.</p>
 
 						<p>Diese Architektur ermöglicht eine stabile, regulierte
 							Modellierung sprachlicher Abhängigkeiten mit verbesserter
@@ -220,38 +219,29 @@
 					title="Abschnitt ein- oder ausklappen">⬇️ Einklappen</button>
 			</div>
 			<div class="section-content" id="aufgaben-section">
-				<p>Für die Regression der gegebenen Funktion wurde ein
-					Feedforward Neural Network (FFNN) mit konfigurierbarer Architektur
-					eingesetzt (2 Hidden-Layer, je 100 Neuronen, ReLU-Aktivierung,
-					Adam-Optimizer mit Lernrate 0.01 und Batch-Size 32). Die Anzahl der
-					Datenpunkte (N) und die Rauschvarianz (V) wurden gemäß Vorgabe
-					flexibel gestaltet (hier typischerweise N = 100, V = 0.05). Dadurch
-					konnten gezielt Auswirkungen von Datenmenge und Rauschstärke auf
-					das Modellverhalten untersucht werden.</p>
-				<p>
-					Auf den <strong>unverrauschten Daten</strong> zeigte das Modell bei
-					einer Epochenzahl von 1000 ein sehr gutes Fit-Verhalten (Train- und
-					Test-MSE < 0.0001). Bei den <strong>verrauschten Daten</strong>
-					führte ein Bereich von ca. 100-300 Epochen zu einer ausgewogenen
-					Generalisierung (Train-MSE ~0.04-0.06, Test-MSE ~0.06-0.08). Bei
-					sehr hoher Epochenanzahl (ab ca. 15.000) konnte Overfitting
-					deutlich beobachtet werden: der Train-Loss sinkt weiter (&lt;0.02),
-					während der Test-Loss ansteigt (&gt;0.12 bei 15.000 und &gt;0.32
-					bei 20.000).
-				</p>
-				<p>Änderungen an der Architektur (z.B. zusätzliche Layer oder
-					mehr Neuronen) zeigten, dass komplexere Modelle tendenziell
-					schneller zu Overfitting neigen, insbesondere bei kleinen
-					Datensätzen oder hoher Rauschvarianz. Ebenso wirkt sich die Wahl
-					der Aktivierungsfunktion auf die Lernstabilität aus (ReLU erwies
-					sich hier als robust). Die Erhöhung der Datenpunkte führte hingegen
-					zu einem schnelleren Best-Fit Verhalten und einer Angleichung
-					zwischen Test- und Trainings-MSE sowie einem viel späteren
-					Overt-Fit.</p>
-				<p>Insgesamt hat dieses Experiment sehr anschaulich
-					verdeutlicht, wie Modellkomplexität, Trainingsdauer, Datenmenge und
-					Rauschlevel gemeinsam das Lern- und Generalisierungsverhalten eines
-					neuronalen Netzes bestimmen.</p>
+				<p>Das trainierte LSTM-Modell zeigte eine grundsätzlich
+					funktionierende Vorhersagefähigkeit für häufige Wortfolgen,
+					insbesondere bei klaren syntaktischen Mustern. </p>
+					<p>Bei längeren Texten
+					kam es jedoch vereinzelt zu Wiederholungen wie „Am Freitag Am
+					Freitag“, was auf eine begrenzte Kontextverarbeitung oder
+					Überanpassung hindeutet. Um dieses Verhalten zu mildern, wurde eine
+					sogenannte Temperature-Skalierung mit einem Wert von 1.0
+					eingesetzt. Dabei wird die Wahrscheinlichkeitsverteilung über
+					mögliche nächste Wörter vor der Auswahl geglättet, sodass auch
+					weniger wahrscheinliche Alternativen mit einbezogen werden.</p> 
+					<p>Das
+					Modell reagiert empfindlich auf Groß-/Kleinschreibung und
+					Zeichensetzung, was die Qualität der Vorhersage beeinflussen kann.</p>
+					<p>Die Begrenzung des Vokabulars auf 10.000 Wörter erwies sich als
+					sinnvoller Kompromiss zwischen Modellgröße und Generalisierung.</p>
+					<p>Besonders hilfreich war das Top-k-Ranking zur Bewertung der
+					Vorhersagequalität. Die Perplexity als Metrik zeigte zudem, ob das
+					Modell sinnvoll generalisiert. Insgesamt wurde deutlich, dass schon
+					einfache LSTM-Modelle mit wenig Code und guter Vorverarbeitung
+					ansprechende Ergebnisse liefern können. Gleichzeitig zeigte sich,
+					dass die Auswahl und Aufbereitung der Trainingsdaten einen großen
+					Einfluss auf die Modellqualität hat.</p>
 			</div>
 		</div>
 
@@ -298,9 +288,9 @@
 					ein deutschsprachiger Korpus, der aus dem <a
 						href="https://wortschatz.uni-leipzig.de/en/download/German?utm_source=chatgpt.com"
 						target="_blank">Wortschatz-Korpus der Universität Leipzig</a>
-					stammt. Der Text wurde im Vorfeld bereinigt und tokenisiert, wobei
-					insbesondere Satzzeichen separiert und Groß-/Kleinschreibung
-					erhalten blieben.
+					stammt. Hieraus wurden 200.000 Zeilen eingelesen. Der Text wurde im
+					Vorfeld bereinigt und tokenisiert, wobei insbesondere Satzzeichen
+					separiert und Groß-/Kleinschreibung erhalten blieben.
 				</p>
 
 				<p>
