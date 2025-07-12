@@ -88,10 +88,9 @@ window.addEventListener("load", async () => {
 		document.getElementById("darkModeToggle").textContent =
 			isDark ? "☀️ Light Mode aktivieren" : "🌙 Dark Mode aktivieren";
 
-		const screenshotImg = document.getElementById("screenshot-img");
-		if (screenshotImg) {
-			screenshotImg.src = isDark ? "overfit-details_dark.png" : "overfit-details.png";
-		}
+			if (window.lastEvalResult) {
+			  drawPlotlyChart(window.lastEvalResult);
+			}
 	});
 
 	document.querySelectorAll(".collapsible-section .toggle-button").forEach(btn => {
@@ -135,27 +134,43 @@ class Tokenizer {
 	}
 }
 
+function drawPlotlyChart(data) {
+  const topk = data.topk_accuracy;
+  const isDark = document.body.classList.contains("dark");
+
+  Plotly.newPlot("plotly-chart", [{
+    x: Object.keys(topk).map(k => parseInt(k)),
+    y: Object.values(topk),
+    type: "bar",
+    marker: {
+      color: isDark ? "lightblue" : "steelblue"
+    }
+  }], {
+    title: "Top-k Trefferquote",
+    paper_bgcolor: isDark ? "#222" : "#fff",
+    plot_bgcolor: isDark ? "#222" : "#fff",
+    font: { color: isDark ? "#eee" : "#000" },
+    xaxis: { title: "k", color: isDark ? "#eee" : "#000" },
+    yaxis: { title: "Trefferquote (%)", color: isDark ? "#eee" : "#000" }
+  });
+}
+
+
 fetch("https://jachirobi.github.io/DeepLearningEA3/stats/evaluation_result.json")
   .then(res => res.json())
   .then(data => {
+    window.lastEvalResult = data; // ⬅️ Speichere Daten global
     const topk = data.topk_accuracy;
+
     for (const k in topk) {
       const span = document.getElementById(`acc${k}`);
       if (span) span.textContent = topk[k];
     }
+
     document.getElementById("perplexity").textContent = data.perplexity;
-    
-    // Optional: Plotly-Diagramm zeichnen
-    Plotly.newPlot("plotly-chart", [{
-      x: Object.keys(topk).map(k => parseInt(k)),
-      y: Object.values(topk),
-      type: "bar"
-    }], {
-      title: "Top-k Trefferquote",
-      xaxis: { title: "k" },
-      yaxis: { title: "Trefferquote (%)" }
-    });
+    drawPlotlyChart(data); // ⬅️ Verwende neue Funktion
   });
+
 
 
 

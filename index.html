@@ -7,11 +7,18 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet"
 	href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link
+	href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.css"
+	rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1/prism.min.js"></script>
+<script
+	src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-python.min.js"></script>
 <script
 	src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.13.0/dist/tf.min.js"></script>
 <script
 	src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
 
@@ -152,10 +159,10 @@
 				<ol>
 					<li><strong>Architektur:</strong><br>
 
-						<p>Das Modell besteht aus einem Embedding-Layer mit einer
-							Ausgabedimension von 64 und einer Eingabesequenzlänge von 5
-							Token. Dies ermöglicht es dem Modell, sprachliche Abhängigkeiten
-							über einen größeren Bereich zu erfassen.</p>
+						<p>Das Modell beginnt mit einem Embedding-Layer, der jedes
+							Token in einen 64-dimensionalen Vektor übersetzt. Die
+							Eingabesequenzlänge beträgt 5 Token, wodurch das Modell
+							sprachliche Muster über mehrere Wörter hinweg erfassen kann.</p>
 
 						<p>An das Embedding schließen sich 2 hidden Layer (in sich
 							rekursiv) mit je 200 LSTM Units an. Tests mit mehr Layern haben
@@ -173,9 +180,10 @@
 						</p>
 
 						<p>Die Ausgabe erfolgt über eine dichte Softmax-Schicht, deren
-							Dimension der Größe des verwendeten Vokabulars entspricht (10.000
+							Dimension der Größe des verwendeten Vokabulars entspricht (20.000
 							Tokens). Diese Schicht gibt eine Wahrscheinlichkeitsverteilung
-							über alle potenziell nächsten Wörter zurück.</p>
+							über alle potenziell nächsten Wörter zurück. Als Quelle für das
+							Vokabular wurden 300.000 Zeilen Text eingelesen.</p>
 
 						<p>Für das Training wurde der Adam-Optimierer mit einer
 							Lernrate von 0,001 verwendet, da sich dieser in Kombination mit
@@ -184,13 +192,268 @@
 						<p>Das Modell wurde mit einer Batch-Größe von 128 über 9
 							Epochen hinweg trainiert. Die Anzahl der Epochen hat wurde
 							mittels early stoppings ermittelt.</p>
+						<p>Für das Training des Modells wurde ein Python Skript
+							verwendet, damit das Modell gespeichert und durch die
+							Webanwendung geladen werden kann.</p>
+
+						<p>Das Trainingsskript kann hier eingesehen werden:</p> <details>
+							<summary>📄 Python-Skript anzeigen (Training_Modell.py)</summary>
+							<pre>
+								<code class="language-python">
+import tensorflow as tf
+from keras.preprocessing.text import Tokenizer
+from keras.utils import to_categorical
+from keras.models import Sequential
+from keras.layers import Embedding, LSTM, Dense
+from keras.layers import Bidirectional
+from keras.callbacks import EarlyStopping
+from keras.layers import Input
+from keras.layers import InputLayer
+import numpy as np
+import json
+import os
+import re
+import tensorflowjs as tfjs  # tfjs-Konverter direkt im Skript
+import tensorflow as tf
+print("GPUs verfügbar:", tf.config.list_physical_devices('GPU'))
+
+
+
+# Parameter
+SEQ_LENGTH = 5
+MAX_WORDS = 20000
+EPOCHS = 9
+BATCH_SIZE = 128
+
+# Funktion: Satzzeichen trennen (wichtig für Tokenisierung)
+def separate_punctuation(text):
+    return re.sub(r"([.,!?;:])", r" \1 ", text)
+
+# Textdatei einlesen
+with open("deu_news_2024_1M-sentences.txt", "r", encoding="utf-8") as f:
+    raw = f.read()
+
+lines = raw.split('\n')[:300000]
+sentences = [line.strip().split(maxsplit=1)[-1] for line in lines if line.strip()]
+text = " ".join(sentences)
+text = separate_punctuation(text).lower()  # Kleinschreibung aktivieren
+
+# Tokenisierung mit Groß-/Kleinschreibung
+tokenizer = Tokenizer(num_words=MAX_WORDS, lower=True, oov_token="<UNK>")
+tokenizer.fit_on_texts([text])
+word_index = tokenizer.word_index
+sequences = [token for token in tokenizer.texts_to_sequences([text])[0] if token < MAX_WORDS]
+
+# Eingabesequenzen vorbereiten
+inputs, labels = [], []
+for i in range(len(sequences) - SEQ_LENGTH):
+    inputs.append(sequences[i:i + SEQ_LENGTH])
+    labels.append(sequences[i + SEQ_LENGTH])
+
+inputs = np.array(inputs)
+labels = np.array(labels)
+
+model_inputs = tf.keras.Input(shape=(SEQ_LENGTH,))
+x = Embedding(MAX_WORDS, 256)(model_inputs)
+x = LSTM(200, return_sequences=True, dropout=0.2, recurrent_dropout=0.1)(x)
+x = LSTM(200, dropout=0.2, recurrent_dropout=0.1)(x)
+outputs = Dense(MAX_WORDS, activation='softmax')(x)
+
+model = tf.keras.Model(inputs=model_inputs, outputs=outputs)
+
+
+
+
+model.compile(
+    loss='sparse_categorical_crossentropy',
+    optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+    metrics=['accuracy']
+)
+
+# Training
+early_stop = EarlyStopping(
+    monitor='val_loss',       # überwacht den Validierungs-Loss
+    patience=5,               # stoppt, wenn sich val_loss 5 Epochen lang nicht verbessert
+    restore_best_weights=True, # stellt die besten Gewichte wieder her
+    verbose=1    
+)
+
+model.summary()
+model.fit(
+    inputs,
+    labels,
+    epochs=EPOCHS,
+    batch_size=BATCH_SIZE,
+    validation_split=0.1,   # 10 % der Daten werden zur Validierung genutzt
+    callbacks=[early_stop],
+    verbose=1  # Fortschritt anzeigen
+)
+
+# Verzeichnisse anlegen
+MODEL_DIR = "saved_model"
+TFJS_DIR = "tfjs_model"
+os.makedirs(MODEL_DIR, exist_ok=True)
+os.makedirs(TFJS_DIR, exist_ok=True)
+
+# Speichern im SavedModel-Format (für Keras 3 empfohlen)
+model.save(MODEL_DIR)
+model.save("model.keras")
+
+
+# Konvertieren nach TensorFlow.js
+tfjs.converters.save_keras_model(model, TFJS_DIR)
+
+# Tokenizer-Wortindex speichern
+# Begrenze gespeichertes Vokabular auf MAX_WORDS
+limited_word_index = {
+    word: idx for word, idx in tokenizer.word_index.items() if idx < MAX_WORDS
+}
+with open(os.path.join(TFJS_DIR, "tokenizer_word_index.json"), "w", encoding="utf-8") as f:
+    json.dump(limited_word_index, f)
+
+print("✅ Modell wurde erfolgreich im SavedModel-Format und für TensorFlow.js gespeichert.")
+
+  
+								
+								
+								
+								</code>
+							</pre>
+						</details>
+
 
 						<p>Diese Architektur ermöglicht eine stabile, regulierte
 							Modellierung sprachlicher Abhängigkeiten mit verbesserter
 							Generalisierungsfähigkeit.</p>
 					<li><strong>Trefferquote bei Vorhersagen:</strong><br>
-						Die folgende Tabelle zeigt, wie oft das richtige Wort unter den
-						Top-k-Vorhersagen lag:
+
+						<p>Zur Berechnung der Top-k-Vorhersagen und der Perplexity
+							wurde das folgende Python Skript verwendet:</p> <details>
+							<summary>📄 Python-Skript anzeigen (Test_Modell.py)</summary>
+							<pre>
+								<code class="language-python">
+								import numpy as np
+import json
+import math
+import re
+from tensorflow.keras.preprocessing.text import Tokenizer
+import tensorflow as tf
+from tensorflow.keras.models import load_model
+
+# ------------------------------
+# ⚙️ Konfiguration
+# ------------------------------
+SEQ_LENGTH = 5
+MAX_WORDS = 20000
+BATCH_SIZE = 512
+
+MODEL_PATH = "model.keras"
+TOKENIZER_PATH = "tfjs_model/tokenizer_word_index.json"
+TESTDATA_PATH = "deu_news_2024_1M-sentences.txt"
+
+# ------------------------------
+# 🔧 Hilfsfunktionen
+# ------------------------------
+def separate_punctuation(text):
+    return re.sub(r"([.,!?;:])", r" \1 ", text)
+
+def load_tokenizer(path):
+    with open(path, "r", encoding="utf-8") as f:
+        word_index = json.load(f)
+    tokenizer = Tokenizer(num_words=MAX_WORDS, lower=False, oov_token="<UNK>")
+    tokenizer.word_index = word_index
+    tokenizer.index_word = {v: k for k, v in word_index.items()}
+    return tokenizer
+
+def evaluate_topk_accuracy(model, inputs, labels, topk_list=[1, 5, 10, 20, 100]):
+    results = {k: 0 for k in topk_list}
+    total = 0
+
+    for i in range(0, len(inputs), BATCH_SIZE):
+        batch_inputs = inputs[i:i + BATCH_SIZE]
+        batch_labels = labels[i:i + BATCH_SIZE]
+        preds = model.predict(batch_inputs, verbose=0)
+
+        for j, pred in enumerate(preds):
+            sorted_indices = np.argsort(pred)[::-1]
+            true_index = batch_labels[j]
+            for k in topk_list:
+                if true_index in sorted_indices[:k]:
+                    results[k] += 1
+        total += len(batch_inputs)
+
+    return {k: round(results[k] / total * 100, 2) for k in topk_list}
+
+def calculate_perplexity(model, inputs, labels):
+    log_probs = []
+    for i in range(0, len(inputs), BATCH_SIZE):
+        batch_inputs = inputs[i:i + BATCH_SIZE]
+        batch_labels = labels[i:i + BATCH_SIZE]
+        preds = model.predict(batch_inputs, verbose=0)
+
+        for j, pred in enumerate(preds):
+            true_idx = batch_labels[j]
+            prob = pred[true_idx] if true_idx < len(pred) else 1e-10
+            log_probs.append(math.log(prob + 1e-10))
+
+    cross_entropy = -np.mean(log_probs)
+    return round(math.exp(cross_entropy), 2)
+
+# ------------------------------
+# Ausführung
+# ------------------------------
+print("Lade Modell...")
+model = load_model(MODEL_PATH, compile=False)
+
+print("Lade Tokenizer...")
+tokenizer = load_tokenizer(TOKENIZER_PATH)
+
+print(""Lade Testdaten...")
+with open(TESTDATA_PATH, "r", encoding="utf-8") as f:
+    raw_text = f.read()
+
+lines = raw_text.split('\n')[:10000]
+sentences = [line.strip().split(maxsplit=1)[-1] for line in lines if line.strip()]
+text = " ".join(sentences)
+text = separate_punctuation(text)  # Nur verwenden, wenn Satzzeichen im Tokenizer enthalten sind
+
+sequence = tokenizer.texts_to_sequences([text])[0]
+
+inputs, labels = [], []
+for i in range(len(sequence) - SEQ_LENGTH):
+    inputs.append(sequence[i:i + SEQ_LENGTH])
+    labels.append(sequence[i + SEQ_LENGTH])
+
+inputs = np.array(inputs)
+labels = np.array(labels)
+
+print(f"Berechne Top-k-Genauigkeit für {len(inputs)} Sequenzen...")
+topk = evaluate_topk_accuracy(model, inputs, labels)
+print("Top-k Accuracy:", topk)
+
+print("Berechne Perplexity...")
+perplexity = calculate_perplexity(model, inputs, labels)
+print("Perplexity:", perplexity)
+
+# Ergebnis speichern
+result = {
+    "topk_accuracy": topk,
+    "perplexity": perplexity
+}
+
+with open("evaluation_result.json", "w", encoding="utf-8") as f:
+    json.dump(result, f, indent=2, ensure_ascii=False)
+
+print("Fertig.")
+print(json.dumps(result, indent=2, ensure_ascii=False))
+								
+								
+								
+								</code>
+							</pre>
+						</details>
+						<p>Die folgende Tabelle zeigt, wie oft das richtige Wort unter
+							den Top-k-Vorhersagen lag:</p>
 						<ul>
 							<li>k=1: <span id="acc1">...</span> %
 							</li>
@@ -202,7 +465,13 @@
 							</li>
 							<li>k=100: <span id="acc100">...</span> %
 							</li>
-						</ul> Optional: Perplexity = <span id="perplexity">...</span></li>
+						</ul>
+						<p>
+							Perplexity = <span id="perplexity">...</span>
+						</p>
+						<div id="plotly-chart"
+							style="width: 100%; max-width: 700px; height: 400px; margin-top: 1em;"></div>
+					</li>
 
 					<li><strong>Rekonstruktion der Trainingsdaten:</strong><br>
 						<p>Das trainierte LSTM-Sprachmodell speichert keine konkreten
@@ -246,7 +515,7 @@
 					mit einbezogen werden.</p>
 				<p>Das Modell reagiert empfindlich auf Groß-/Kleinschreibung und
 					Zeichensetzung, was die Qualität der Vorhersage beeinflussen kann.</p>
-				<p>Die Begrenzung des Vokabulars auf 10.000 Wörter erwies sich
+				<p>Die Begrenzung des Vokabulars auf 20.000 Wörter erwies sich
 					als sinnvoller Kompromiss zwischen Modellgröße und Generalisierung.</p>
 				<p>Besonders hilfreich war das Top-k-Ranking zur Bewertung der
 					Vorhersagequalität. Die Perplexity als Metrik zeigte zudem, ob das
@@ -338,7 +607,7 @@
 					beispielsweise aria-label, alt-texte oder Kontraste bei der
 					Farbauswahl.</p>
 				<p>
-					<strong>Quellen & verwendete Technologien:</strong><br>
+					<strong>Quellen & verwendete Technologien:</strong> <br> <br>
 					Wortschatz-Korpus der Universität Leipzig<br> (<a
 						href="https://wortschatz.uni-leipzig.de/en/download/German?utm_source=chatgpt.com"
 						target="_blank">wortschatz.uni-leipzig.de</a>)<br> TensorFlow
