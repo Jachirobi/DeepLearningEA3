@@ -123,7 +123,6 @@ class Tokenizer {
 
 	textsToSequences(text) {
 		const tokens = text
-			.replace(/([.,!?;:])/g, " $1 ")   // Satzzeichen abtrennen
 			.toLowerCase()
 			.trim()
 			.split(/\s+/);                   // tokenisieren
@@ -135,6 +134,30 @@ class Tokenizer {
 		return seq.map(index => this.indexWord[index] || "<?>");
 	}
 }
+
+fetch("evaluation_result.json")
+  .then(res => res.json())
+  .then(data => {
+    const topk = data.topk_accuracy;
+    for (const k in topk) {
+      const span = document.getElementById(`acc${k}`);
+      if (span) span.textContent = topk[k];
+    }
+    document.getElementById("perplexity").textContent = data.perplexity;
+    
+    // Optional: Plotly-Diagramm zeichnen
+    Plotly.newPlot("plotly-chart", [{
+      x: Object.keys(topk).map(k => parseInt(k)),
+      y: Object.values(topk),
+      type: "bar"
+    }], {
+      title: "Top-k Trefferquote",
+      xaxis: { title: "k" },
+      yaxis: { title: "Trefferquote (%)" }
+    });
+  });
+
+
 
 function isPunctuation(token) {
 	return /^[.,!?;:]$/.test(token);
@@ -185,7 +208,6 @@ function sampleFromDistribution(probs, temperature = 1.0) {
 // Vorhersage-Funktion
 async function predictNextWords(promptText, topK = 5) {
 	const tokens = promptText
-	  .replace(/([.,!?;:])/g, " $1 ")
 	  .trim()
 	  .split(/\s+/)
 	  .filter(Boolean);
