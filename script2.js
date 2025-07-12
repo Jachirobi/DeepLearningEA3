@@ -135,7 +135,7 @@ class Tokenizer {
 	}
 }
 
-fetch("evaluation_result.json")
+fetch("https://jachirobi.github.io/DeepLearningEA3/stats/evaluation_result.json")
   .then(res => res.json())
   .then(data => {
     const topk = data.topk_accuracy;
