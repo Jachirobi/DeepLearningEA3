@@ -110,7 +110,7 @@
 			<h2>Interaktive Wortvorhersage</h2>
 
 			<div class="interaktion-ui">
-				<label for="userPrompt">Eingabetext:</label>
+				<label for="userPrompt">Eingabetext (optimal 5 Worte zur Wortvorhersage):</label>
 				<textarea id="userPrompt"
 					placeholder="Geben Sie hier Ihren Text ein..."></textarea>
 
@@ -141,10 +141,6 @@
 				</ul>
 			</div>
 
-			<div id="chartContainer">
-				<h3>Modellbewertung</h3>
-				<canvas id="accuracyChart" width="400" height="200"></canvas>
-			</div>
 		</section>
 
 
@@ -570,9 +566,9 @@ print(json.dumps(result, indent=2, ensure_ascii=False))
 					ein deutschsprachiger Korpus, der aus dem <a
 						href="https://wortschatz.uni-leipzig.de/en/download/German?utm_source=chatgpt.com"
 						target="_blank">Wortschatz-Korpus der Universität Leipzig</a>
-					stammt. Hieraus wurden 200.000 Zeilen eingelesen. Der Text wurde im
+					stammt. Hieraus wurden 300.000 Zeilen eingelesen. Der Text wurde im
 					Vorfeld bereinigt und tokenisiert, wobei insbesondere Satzzeichen
-					separiert und Groß-/Kleinschreibung erhalten blieben.
+					separiert und Groß-/Kleinschreibung ignoriert wurde.
 				</p>
 
 				<p>

@@ -98,6 +98,7 @@ header button:hover {
 	margin-bottom: 1rem;
 }
 
+
 textarea#userPrompt {
 	width: 100%;
 	height: 100px;
@@ -106,7 +107,11 @@ textarea#userPrompt {
 	border: 1px solid #ccc;
 	border-radius: 6px;
 	resize: vertical;
+	  margin: 0 auto;   /* zentriert das Textfeld innerhalb des Containers */
+  display: block;
+  max-width: 1140px;
 }
+
 
 .button-row {
 	display: flex;
