@@ -1,7 +1,7 @@
 let tokenizer;
 let model;
 let autoModeActive = false;
-const MAX_VOCAB_SIZE = 10000; 
+const MAX_VOCAB_SIZE = 20000; 
 
 // Starte, sobald die Seite vollständig geladen ist
 window.addEventListener("load", async () => {
@@ -184,18 +184,24 @@ function capitalizeFirst(word) {
 }
 
 function appendToken(inputEl, token) {
-	const current = inputEl.value;
-	const endsWithSpace = /\s$/.test(current);
+	const current = inputEl.value.trim();
+	const endsWithSpace = /\s$/.test(inputEl.value);
 	const isPunct = isPunctuation(token);
 
 	if (isPunct) {
-		// Kein Leerzeichen vor Satzzeichen
-		inputEl.value = current.trimEnd() + token + " ";
+		inputEl.value = inputEl.value.trimEnd() + token + " ";
 	} else {
-		// Leerzeichen vor Wort, falls nicht vorhanden
-		inputEl.value = current + (endsWithSpace ? "" : " ") + token;
+		let formattedToken = token;
+		
+		// Wenn der Eingabetext leer ist, schreibe erstes Wort groß
+		if (current.length === 0) {
+			formattedToken = capitalizeFirst(token);
+		}
+
+		inputEl.value = inputEl.value + (endsWithSpace || inputEl.value.length === 0 ? "" : " ") + formattedToken;
 	}
 }
+
 
 function formatWordForContext(currentText, predictedWord) {
 	const lastChar = currentText.trim().slice(-1);

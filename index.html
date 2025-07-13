@@ -110,7 +110,8 @@
 			<h2>Interaktive Wortvorhersage</h2>
 
 			<div class="interaktion-ui">
-				<label for="userPrompt">Eingabetext (optimal 5 Worte zur Wortvorhersage):</label>
+				<label for="userPrompt">Eingabetext (optimal 5 Worte zur
+					Wortvorhersage):</label>
 				<textarea id="userPrompt"
 					placeholder="Geben Sie hier Ihren Text ein..."></textarea>
 
@@ -162,9 +163,9 @@
 
 						<p>An das Embedding schließen sich 2 hidden Layer (in sich
 							rekursiv) mit je 200 LSTM Units an. Tests mit mehr Layern haben
-							gezeigt, dass der Loss sehr langsam gesunken ist und die Dauer
-							des Trainings deutlich länger wurde. Die Erhöhung der Units hat
-							zu einer Verbesserung des Trainingsergebnisses geführt.</p>
+							gezeigt, dass die Dauer des Trainings deutlich länger wurde und
+							die Perplexity kaum gesunken ist. Die Erhöhung der Units hat zu
+							einer Verbesserung des Trainingsergebnisses geführt.</p>
 						<p>
 							Zur Vermeidung von Overfitting wurde Dropout mit einer Rate von
 							0,2 sowie ein recurrent Dropout von 0,1 in beiden LSTM-Schichten
@@ -185,9 +186,9 @@
 							Lernrate von 0,001 verwendet, da sich dieser in Kombination mit
 							LSTM-Netzen als robust und stabil erwiesen hat. Als Loss-Funktion
 							wurde kategorische Kreuzentropie verwendet.</p>
-						<p>Das Modell wurde mit einer Batch-Größe von 128 über 9
-							Epochen hinweg trainiert. Die Anzahl der Epochen hat wurde
-							mittels early stoppings ermittelt.</p>
+						<p>Das Modell wurde mit einer Batch-Größe von 128 über 10
+							Epochen hinweg trainiert. Die Anzahl der Epochen wurde mittels
+							early stoppings ermittelt.</p>
 						<p>Für das Training des Modells wurde ein Python Skript
 							verwendet, damit das Modell gespeichert und durch die
 							Webanwendung geladen werden kann.</p>
@@ -218,7 +219,7 @@ print("GPUs verfügbar:", tf.config.list_physical_devices('GPU'))
 # Parameter
 SEQ_LENGTH = 5
 MAX_WORDS = 20000
-EPOCHS = 9
+EPOCHS = 10
 BATCH_SIZE = 128
 
 # Funktion: Satzzeichen trennen (wichtig für Tokenisierung)
@@ -313,6 +314,11 @@ print("✅ Modell wurde erfolgreich im SavedModel-Format und für TensorFlow.js 
 								
 								
 								
+								
+								
+								
+								
+								
 								</code>
 							</pre>
 						</details>
@@ -337,7 +343,7 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 
 # ------------------------------
-# ⚙️ Konfiguration
+# Konfiguration
 # ------------------------------
 SEQ_LENGTH = 5
 MAX_WORDS = 20000
@@ -445,6 +451,11 @@ print(json.dumps(result, indent=2, ensure_ascii=False))
 								
 								
 								
+								
+								
+								
+								
+								
 								</code>
 							</pre>
 						</details>
@@ -511,15 +522,19 @@ print(json.dumps(result, indent=2, ensure_ascii=False))
 					mit einbezogen werden.</p>
 				<p>Das Modell reagiert empfindlich auf Groß-/Kleinschreibung und
 					Zeichensetzung, was die Qualität der Vorhersage beeinflussen kann.</p>
-				<p>Die Begrenzung des Vokabulars auf 20.000 Wörter erwies sich
-					als sinnvoller Kompromiss zwischen Modellgröße und Generalisierung.</p>
 				<p>Besonders hilfreich war das Top-k-Ranking zur Bewertung der
 					Vorhersagequalität. Die Perplexity als Metrik zeigte zudem, ob das
-					Modell sinnvoll generalisiert. Insgesamt wurde deutlich, dass schon
-					einfache LSTM-Modelle mit wenig Code und guter Vorverarbeitung
-					ansprechende Ergebnisse liefern können. Gleichzeitig zeigte sich,
-					dass die Auswahl und Aufbereitung der Trainingsdaten einen großen
-					Einfluss auf die Modellqualität hat.</p>
+					Modell sinnvoll generalisiert.</p>
+				<p>Um die Perplexity noch weiter zu verbessern, hätte der
+					Wortschatz und der einzulesende Textkorpus noch deutlich erhöht
+					werden müssen. Geht man von einem durchschnittlichem Wortschatz von
+					50.000 Wörtern aus, hätte man ungefähr 2-5 Millionen Zeilen Text
+					einlesen müssen, was meine Rechenkapazität deutlich überstiegen
+					hätte. Bei 20.000 Token und 300.000 einzulesenden Zeilen Text hat
+					das Training des Modells auf der CPU bereits 15 Stunden gedauert
+					(GPU war leider nicht möglich). Eine weitere Möglichkeit die
+					Perplexity zu verbessern wäre es gewesen bidirektionale LSTM´s zu
+					verwenden, was in meinem Fall die Trainingszeit verdoppelt hätte.</p>
 			</div>
 		</div>
 
